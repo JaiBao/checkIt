@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>陽春兌獎機器</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 20px;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            width: 700px;
+            max-width: 100%;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        /* 檔案上傳 */
+        input[type="file"] {
+            border: 2px dashed #ccc;
+            padding: 15px;
+            width: 100%;
+            border-radius: 6px;
+            box-sizing: border-box;
+            background: #fafafa;
+            cursor: pointer;
+        }
+
+        input[type="file"]:hover {
+            background: #fff;
+            border-color: #888;
+        }
+
+        /* 控制列佈局 */
+        .control-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        /* 下拉選單與輸入框 */
+        select,
+        input[type="text"] {
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        select {
+            flex: 2;
+            min-width: 200px;
+        }
+
+        #luckyNumber {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        /* 按鈕樣式 */
+        .btn {
+            padding: 12px 20px;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .btn-search {
+            background-color: #e63946;
+        }
+
+        /* 紅色系 */
+        .btn-search:hover {
+            background-color: #d62828;
+        }
+
+        .btn-add {
+            background-color: #457b9d;
+            font-size: 14px;
+            padding: 8px 15px;
+        }
+
+        .btn-add:hover {
+            background-color: #1d3557;
+        }
+
+        .btn-confirm-add {
+            background-color: #2a9d8f;
+        }
+
+        /* 增開獎項區塊 */
+        #extra-prize-area {
+            margin-top: 10px;
+            background: #eef4f8;
+            padding: 10px;
+            border-radius: 6px;
+            display: none;
+            /* 預設隱藏 */
+        }
+
+        /* 結果顯示 */
+        #result-area {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+            text-align: center;
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .success {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeeba;
+        }
+
+        .fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .winner-name {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #d00000;
+        }
+
+        .prize-badge {
+            background: #333;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            vertical-align: middle;
+        }
+
+        /* 歷史紀錄表格 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        #history-section {
+            display: none;
+            margin-top: 30px;
+            width: 700px;
+            max-width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2>🎰 陽春兌獎機器</h2>
+
+        <div class="section">
+            <label>1. 上傳名單 (預設載入 2512list.txt)</label>
+            <input type="file" id="fileInput" accept=".txt">
+            <div id="status-bar" style="margin-top:5px; font-size:0.9em; color:#666;"></div>
+        </div>
+
+        <div class="section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <label style="margin:0;">2. 選擇本輪獎項</label>
+                <button class="btn btn-add" onclick="toggleExtraPrize()">+ 增開獎項</button>
+            </div>
+
+            <div id="extra-prize-area">
+                <div class="control-group">
+                    <input type="text" id="newPrizeName" placeholder="輸入獎項名稱 (如: 加碼現金1000)">
+                    <button class="btn btn-confirm-add" onclick="addNewPrize()">確認新增</button>
+                </div>
+            </div>
+
+            <select id="prizeSelect">
+                <option value="📱 iPhone 17 Pro Max ×2">📱 iPhone 17 Pro Max (共2名)</option>
+                <option value="📱 iPhone 17 Pro ×1">📱 iPhone 17 Pro (共1名)</option>
+                <option value="💰 8888 ×1">💰 8888 現金 (共1名)</option>
+                <option value="💰 5888 ×1">💰 5888 現金 (共1名)</option>
+                <option value="💰 4888 ×2">💰 4888 現金 (共2名)</option>
+                <option value="💰 3888 ×3">💰 3888 現金 (共3名)</option>
+                <option value="💰 2888 ×4">💰 2888 現金 (共4名)</option>
+                <option value="💰 1888 ×5">💰 1888 現金 (共5名)</option>
+                <option value="🧧 888 ×8">🧧 888 現金 (共8名)</option>
+            </select>
+        </div>
+
+        <div class="section" style="border-bottom:none; margin-bottom:0;">
+            <label>3. 輸入開出號碼</label>
+            <div class="control-group">
+                <input type="text" id="luckyNumber" placeholder="號碼 (例: 4389)"
+                    onkeydown="if(event.key==='Enter') checkWinner()">
+                <button class="btn btn-search" onclick="checkWinner()">🔍 查詢得主</button>
+            </div>
+        </div>
+
+        <div id="result-area"></div>
+    </div>
+
+    <div class="container" id="history-section">
+        <h3>📝 中獎名單紀錄</h3>
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th style="width: 30%">獎項</th>
+                    <th style="width: 20%">中獎號碼</th>
+                    <th style="width: 50%">得主帳號</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let lotteryData = [];
+        const DEFAULT_FILE_NAME = '2512list.txt'; // 預設檔案名稱
+
+        // ========== 新增：頁面載入時自動讀取 ==========
+        window.addEventListener('DOMContentLoaded', () => {
+            const statusBar = document.getElementById('status-bar');
+            statusBar.innerText = `⏳ 正在嘗試自動載入 ${DEFAULT_FILE_NAME}...`;
+
+            fetch(DEFAULT_FILE_NAME)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("HTTP error " + response.status);
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    parseData(text);
+                    // 成功載入後，更新狀態文字
+                    document.getElementById('status-bar').innerText += ' (來源：預設檔案)';
+                })
+                .catch(error => {
+                    console.error("Auto load failed:", error);
+                    statusBar.innerHTML = `<span style="color:orange">⚠️ 自動載入失敗：請確認檔案存在，並使用 Live Server 開啟網頁。</span> <br> (您仍可使用上方按鈕手動上傳)`;
+                });
+        });
+        // ===========================================
+
+        // 1. 手動上傳檔案邏輯 (會覆蓋預設載入的資料)
+        document.getElementById('fileInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                parseData(e.target.result);
+                document.getElementById('status-bar').innerText += ' (來源：手動上傳)';
+            };
+            reader.readAsText(file);
+        });
+
+        function parseData(text) {
+            lotteryData = [];
+            const lines = text.split('\n').map(line => line.trim()).filter(line => line !== '');
+
+            let currentName = null;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (!currentName) {
+                    currentName = line;
+                } else {
+                    const numbers = line.split(',').map(n => n.trim());
+                    lotteryData.push({ name: currentName, numbers: numbers });
+                    currentName = null;
+                }
+            }
+            document.getElementById('status-bar').innerText = `✅ 資料載入成功 (共 ${lotteryData.length} 人)`;
+        }
+
+        // 2. 增開獎項功能
+        function toggleExtraPrize() {
+            const area = document.getElementById('extra-prize-area');
+            area.style.display = (area.style.display === 'none' || area.style.display === '') ? 'block' : 'none';
+            document.getElementById('newPrizeName').focus();
+        }
+
+        function addNewPrize() {
+            const nameInput = document.getElementById('newPrizeName');
+            const name = nameInput.value.trim();
+            if (!name) return alert("請輸入獎品名稱");
+
+            const select = document.getElementById('prizeSelect');
+            const option = document.createElement("option");
+            option.text = "🎁 [加碼] " + name;
+            option.value = "🎁 " + name;
+
+            select.add(option, 0);
+            select.selectedIndex = 0;
+
+            nameInput.value = '';
+            document.getElementById('extra-prize-area').style.display = 'none';
+        }
+
+        // 3. 查詢與紀錄邏輯
+        function checkWinner() {
+            const numInput = document.getElementById('luckyNumber');
+            const targetNum = numInput.value.trim();
+            const resultArea = document.getElementById('result-area');
+            const prizeName = document.getElementById('prizeSelect').value;
+
+            resultArea.style.display = 'none';
+            resultArea.className = '';
+
+            if (lotteryData.length === 0) return alert("沒有資料！請檢查是否已載入 txt 檔案。");
+            if (!targetNum) return alert("請輸入號碼！");
+
+            const winners = lotteryData.filter(user => user.numbers.includes(targetNum));
+
+            resultArea.style.display = 'block';
+
+            if (winners.length > 0) {
+                resultArea.className = 'success';
+                let winnerNames = winners.map(w => w.name).join(' & ');
+
+                resultArea.innerHTML = `
+                <div>恭喜獲得 <span class="prize-badge">${prizeName}</span></div>
+                <div class="winner-name">${winnerNames}</div>
+                <div>中獎號碼：<strong>${targetNum}</strong></div>
+            `;
+
+                addHistory(prizeName, targetNum, winnerNames);
+                numInput.value = '';
+            } else {
+                resultArea.className = 'fail';
+                resultArea.innerHTML = `
+                <h3>😞 沒人中獎</h3>
+                <p>號碼 <strong>${targetNum}</strong> 無人持有。</p>
+            `;
+            }
+        }
+
+        function addHistory(prize, number, name) {
+            const historySection = document.getElementById('history-section');
+            const tbody = document.querySelector('#historyTable tbody');
+
+            historySection.style.display = 'block';
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+            <td>${prize}</td>
+            <td>${number}</td>
+            <td style="color:#d00000; font-weight:bold;">${name}</td>
+        `;
+
+            tbody.insertBefore(row, tbody.firstChild);
+        }
+    </script>
+
+</body>
+
+</html>
