@@ -381,7 +381,7 @@
             
             // 修正獎品名稱：移除 "×" 或 "x" 後面的數字
             // 例如 "💰 4888 ×2" 變成 "💰 4888"
-            const prizeNameClean = prizeNameRaw.split(/[×x]/)[0].trim();
+            const prizeNameClean = prizeNameRaw.replace(/\s*[×x]\d+$/, '').trim();
 
             resultArea.style.display = 'none';
             resultArea.className = '';
@@ -452,3 +452,4 @@
 </body>
 
 </html>
+
