@@ -104,7 +104,6 @@
             background-color: #e63946;
         }
 
-        /* 紅色系 */
         .btn-search:hover {
             background-color: #d62828;
         }
@@ -123,6 +122,23 @@
             background-color: #2a9d8f;
         }
 
+        /* 刪除按鈕樣式 */
+        .btn-delete {
+            background-color: transparent;
+            border: 1px solid #ff4d4d;
+            color: #ff4d4d;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-delete:hover {
+            background-color: #ff4d4d;
+            color: white;
+        }
+
         /* 增開獎項區塊 */
         #extra-prize-area {
             margin-top: 10px;
@@ -130,7 +146,6 @@
             padding: 10px;
             border-radius: 6px;
             display: none;
-            /* 預設隱藏 */
         }
 
         /* 結果顯示 */
@@ -148,7 +163,6 @@
                 transform: scale(0.9);
                 opacity: 0;
             }
-
             to {
                 transform: scale(1);
                 opacity: 1;
@@ -190,11 +204,11 @@
             margin-top: 10px;
         }
 
-        th,
-        td {
+        th, td {
             border: 1px solid #ddd;
             padding: 10px;
             text-align: left;
+            vertical-align: middle;
         }
 
         th {
@@ -271,7 +285,8 @@
                 <tr>
                     <th style="width: 30%">獎項</th>
                     <th style="width: 20%">中獎號碼</th>
-                    <th style="width: 50%">得主帳號</th>
+                    <th style="width: 40%">得主帳號</th>
+                    <th style="width: 10%; text-align:center;">操作</th>
                 </tr>
             </thead>
             <tbody>
@@ -281,33 +296,29 @@
 
     <script>
         let lotteryData = [];
-        const DEFAULT_FILE_NAME = '2512list.txt'; // 預設檔案名稱
+        const DEFAULT_FILE_NAME = '2512list.txt'; 
 
-        // ========== 新增：頁面載入時自動讀取 ==========
+        // ========== 自動載入 ==========
         window.addEventListener('DOMContentLoaded', () => {
             const statusBar = document.getElementById('status-bar');
             statusBar.innerText = `⏳ 正在嘗試自動載入 ${DEFAULT_FILE_NAME}...`;
 
             fetch(DEFAULT_FILE_NAME)
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error("HTTP error " + response.status);
-                    }
+                    if (!response.ok) throw new Error("HTTP error " + response.status);
                     return response.text();
                 })
                 .then(text => {
                     parseData(text);
-                    // 成功載入後，更新狀態文字
                     document.getElementById('status-bar').innerText += ' (來源：預設檔案)';
                 })
                 .catch(error => {
                     console.error("Auto load failed:", error);
-                    statusBar.innerHTML = `<span style="color:orange">⚠️ 自動載入失敗：請確認檔案存在，並使用 Live Server 開啟網頁。</span> <br> (您仍可使用上方按鈕手動上傳)`;
+                    statusBar.innerHTML = `<span style="color:orange">⚠️ 自動載入失敗：請確認檔案存在。</span>`;
                 });
         });
-        // ===========================================
 
-        // 1. 手動上傳檔案邏輯 (會覆蓋預設載入的資料)
+        // 1. 手動上傳
         document.getElementById('fileInput').addEventListener('change', function (e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -337,7 +348,7 @@
             document.getElementById('status-bar').innerText = `✅ 資料載入成功 (共 ${lotteryData.length} 人)`;
         }
 
-        // 2. 增開獎項功能
+        // 2. 增開獎項
         function toggleExtraPrize() {
             const area = document.getElementById('extra-prize-area');
             area.style.display = (area.style.display === 'none' || area.style.display === '') ? 'block' : 'none';
@@ -352,7 +363,7 @@
             const select = document.getElementById('prizeSelect');
             const option = document.createElement("option");
             option.text = "🎁 [加碼] " + name;
-            option.value = "🎁 " + name;
+            option.value = "🎁 " + name; // 加碼獎不自動帶 X1, 讓使用者自己定義名稱
 
             select.add(option, 0);
             select.selectedIndex = 0;
@@ -361,12 +372,16 @@
             document.getElementById('extra-prize-area').style.display = 'none';
         }
 
-        // 3. 查詢與紀錄邏輯
+        // 3. 查詢邏輯
         function checkWinner() {
             const numInput = document.getElementById('luckyNumber');
             const targetNum = numInput.value.trim();
             const resultArea = document.getElementById('result-area');
-            const prizeName = document.getElementById('prizeSelect').value;
+            const prizeNameRaw = document.getElementById('prizeSelect').value;
+            
+            // 修正獎品名稱：移除 "×" 或 "x" 後面的數字
+            // 例如 "💰 4888 ×2" 變成 "💰 4888"
+            const prizeNameClean = prizeNameRaw.split(/[×x]/)[0].trim();
 
             resultArea.style.display = 'none';
             resultArea.className = '';
@@ -383,12 +398,12 @@
                 let winnerNames = winners.map(w => w.name).join(' & ');
 
                 resultArea.innerHTML = `
-                <div>恭喜獲得 <span class="prize-badge">${prizeName}</span></div>
+                <div>恭喜獲得 <span class="prize-badge">${prizeNameClean}</span></div>
                 <div class="winner-name">${winnerNames}</div>
                 <div>中獎號碼：<strong>${targetNum}</strong></div>
             `;
 
-                addHistory(prizeName, targetNum, winnerNames);
+                addHistory(prizeNameClean, targetNum, winnerNames);
                 numInput.value = '';
             } else {
                 resultArea.className = 'fail';
@@ -399,6 +414,7 @@
             }
         }
 
+        // 新增紀錄到表格
         function addHistory(prize, number, name) {
             const historySection = document.getElementById('history-section');
             const tbody = document.querySelector('#historyTable tbody');
@@ -410,9 +426,26 @@
             <td>${prize}</td>
             <td>${number}</td>
             <td style="color:#d00000; font-weight:bold;">${name}</td>
+            <td style="text-align:center;">
+                <button class="btn-delete" onclick="deleteRow(this)" title="取消得獎">❌</button>
+            </td>
         `;
 
             tbody.insertBefore(row, tbody.firstChild);
+        }
+
+        // 刪除紀錄的功能
+        function deleteRow(btn) {
+            if(!confirm("確定要取消此筆中獎紀錄嗎？")) return;
+            
+            const row = btn.closest('tr');
+            row.remove();
+
+            // 如果表格空了，隱藏整個區塊
+            const tbody = document.querySelector('#historyTable tbody');
+            if (tbody.children.length === 0) {
+                document.getElementById('history-section').style.display = 'none';
+            }
         }
     </script>
 
